@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DentAviso</title>
+<style>
+:root{--bg:#EEF5F4;--card:#fff;--ink:#12313A;--mut:#5B7479;--line:#D5E3E1;--pri:#1B7F86;--priS:#D6EEEE;--ok:#2E8B57;--okS:#DDF1E6;--warn:#B77A0A;--warnS:#FBEBCB;--bad:#C03A32;--badS:#F8DAD7}
+@media (prefers-color-scheme:dark){:root{--bg:#0E1C20;--card:#16282D;--ink:#E5F1F0;--mut:#93ABAF;--line:#294248;--pri:#4FB8BF;--priS:#17393D;--ok:#5CC089;--okS:#173A2A;--warn:#E5B04C;--warnS:#3E3010;--bad:#EF7A71;--badS:#44201D}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;font-size:15px;line-height:1.45}
+.app{max-width:520px;margin:0 auto;min-height:100vh;padding:calc(16px + env(safe-area-inset-top,0px)) 16px 96px}
+h1{font-size:22px;margin:0;font-weight:800}
+h2{font-size:15px;margin:22px 0 8px;font-weight:800}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px}
+.mut{color:var(--mut);font-size:13px}
+.badge{font-size:12px;padding:3px 9px;border-radius:99px;font-weight:600;background:var(--priS);color:var(--pri);white-space:nowrap;display:inline-block}
+.b-ok{background:var(--okS);color:var(--ok)}.b-warn{background:var(--warnS);color:var(--warn)}.b-bad{background:var(--badS);color:var(--bad)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.stat b{display:block;font-size:26px;font-weight:800;line-height:1.1}
+.stat span{font-size:13px;color:var(--mut)}
+.row{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 12px;margin-bottom:8px}
+.tap{cursor:pointer}
+.av{width:38px;height:38px;border-radius:50%;background:var(--priS);color:var(--pri);display:grid;place-items:center;font-weight:800;flex:none}
+.grow{flex:1;min-width:0}.grow b{display:block;font-weight:600}.grow small{color:var(--mut);display:block;font-size:13px}
+.btn{border:0;border-radius:10px;padding:9px 13px;font:inherit;font-weight:600;background:var(--pri);color:#fff;cursor:pointer}
+.btn.ghost{background:var(--priS);color:var(--pri)}.btn.red{background:var(--badS);color:var(--bad)}
+.btn.full{width:100%}
+.btn:disabled{opacity:.6}
+.btn:focus-visible,.tab:focus-visible,.stat:focus-visible,.tap:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--pri);outline-offset:2px}
+input,textarea{width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;margin-bottom:10px}
+label{display:block;font-size:13px;font-weight:600;margin:0 0 4px}
+.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabs div{max-width:520px;margin:0 auto;display:grid;grid-template-columns:repeat(2,1fr)}
+.tab{background:none;border:0;padding:12px 4px;color:var(--mut);font:inherit;font-size:13px;cursor:pointer}
+.tab[aria-current=true]{color:var(--pri);font-weight:800}
+.back{background:none;border:0;color:var(--pri);font:inherit;font-weight:600;padding:0;margin-bottom:10px;cursor:pointer}
+.toast{position:fixed;left:16px;right:16px;bottom:calc(76px + env(safe-area-inset-bottom,0px));max-width:488px;margin:0 auto;background:var(--ink);color:var(--bg);padding:12px 14px;border-radius:12px;font-size:13px;display:none;z-index:30}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center;z-index:20}
+.sheet{background:var(--bg);width:100%;max-width:520px;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px))}
+.center{max-width:380px;margin:0 auto;padding-top:12vh}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<div class="tabs" id="tabs" style="display:none"><div>
+  <button class="tab" id="t-home" onclick="go('home')">Inicio</button>
+  <button class="tab" id="t-pac" onclick="go('pac')">Pacientes</button>
+</div></div>
+<div class="ov" id="ov"><div class="sheet" id="sheet"></div></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+var sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
+var S = {neg:null, pac:[], tra:[], view:'home', sel:null, q:''};
+var TIPOS = ['Limpieza','Control general','Ortodoncia','Endodoncia','Blanqueamiento','Extracción','Implante','Prótesis','Otro'];
+
+function $(id){return document.getElementById(id)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function toast(t){var e=$('toast');e.textContent=t;e.style.display='block';clearTimeout(window._t);window._t=setTimeout(function(){e.style.display='none'},3500)}
+function hoy(){var d=new Date();d.setHours(0,0,0,0);return d}
+function dias(f){if(!f)return null;var p=f.split('-').map(Number);return Math.round((new Date(p[0],p[1]-1,p[2])-hoy())/864e5)}
+function fmt(f){if(!f)return '';var p=f.split('-');return p[2]+'/'+p[1]+'/'+p[0]}
+function ini(n){return n.split(' ').filter(Boolean).map(function(a){return a[0]}).slice(0,2).join('').toUpperCase()}
+function est(d){if(d===null)return ['','Sin fecha'];if(d<0)return ['b-bad','Vencido hace '+(-d)+' d'];if(d===0)return ['b-warn','Es hoy'];if(d<=7)return ['b-warn','En '+d+' d'];return ['b-ok','En '+d+' d']}
+function wa(num){var n=String(num).replace(/\D/g,'');if(n.indexOf('593')===0)return n;if(n.charAt(0)==='0')n=n.slice(1);return '593'+n}
+
+/* ---------- ARRANQUE ---------- */
+async function init(){
+  var r = await sb.auth.getSession();
+  if(r.data.session) load(); else showLogin();
+}
+function showLogin(msg){
+  $('tabs').style.display='none';
+  $('app').innerHTML='<div class="center"><h1>DentAviso</h1><p class="mut">Recordatorios para tu clínica dental</p>'+
+  '<label for="em">Correo</label><input id="em" type="email" autocomplete="username">'+
+  '<label for="pw">Contraseña</label><input id="pw" type="password" autocomplete="current-password">'+
+  '<button class="btn full" id="bl" onclick="login()">Entrar</button>'+
+  (msg?'<p style="color:var(--bad)">'+esc(msg)+'</p>':'')+'</div>';
+}
+async function login(){
+  $('bl').disabled=true;
+  var r = await sb.auth.signInWithPassword({email:$('em').value.trim(), password:$('pw').value});
+  if(r.error){showLogin('Correo o contraseña incorrectos.');return}
+  load();
+}
+async function salir(){await sb.auth.signOut();S={neg:null,pac:[],tra:[],view:'home',sel:null,q:''};showLogin()}
+
+async function load(){
+  var per = await sb.from('perfiles').select('negocio_id,nombre').maybeSingle();
+  if(per.error||!per.data){showLogin('Este usuario no tiene una clínica asignada.');return}
+  var n = await sb.from('negocios').select('*').eq('id',per.data.negocio_id).single();
+  if(n.error){showLogin('No se pudo cargar la clínica.');return}
+  S.neg=n.data;
+  var d=dias(S.neg.fin_prueba);
+  if(S.neg.estado==='suspendido'||(S.neg.estado==='prueba'&&d!==null&&d<0)){
+    $('tabs').style.display='none';
+    $('app').innerHTML='<div class="center"><h1>Cuenta no disponible</h1><p>El período de prueba terminó o la cuenta está suspendida. Escríbenos para activarla y seguir usando DentAviso.</p><button class="btn ghost full" onclick="salir()">Salir</button></div>';
+    return;
+  }
+  await refrescar();
+}
+async function refrescar(){
+  var r = await Promise.all([sb.from('pacientes').select('*').order('nombre'), sb.from('tratamientos').select('*').order('proximo_control')]);
+  if(r[0].error||r[1].error){toast('Error al cargar datos');return}
+  S.pac=r[0].data||[];S.tra=r[1].data||[];render();
+}
+
+/* ---------- VISTAS ---------- */
+function go(v){S.view=v;if(v!=='pac')S.sel=null;render()}
+function pac(id){return S.pac.filter(function(p){return p.id===id})[0]}
+function render(){
+  $('tabs').style.display='block';
+  $('t-home').setAttribute('aria-current',S.view==='home');$('t-pac').setAttribute('aria-current',S.view==='pac');
+  $('app').innerHTML = S.view==='home'?vHome():(S.sel?vFicha():vPacientes());
+  if(S.view==='pac'&&!S.sel&&S.focusQ){var i=$('q');if(i){i.focus();i.setSelectionRange(S.q.length,S.q.length)}S.focusQ=false}
+}
+function vHome(){
+  var conFecha=S.tra.filter(function(t){return t.proximo_control});
+  var venc=conFecha.filter(function(t){return dias(t.proximo_control)<0}).length;
+  var porV=conFecha.filter(function(t){var d=dias(t.proximo_control);return d>=0&&d<=7}).length;
+  var avis=S.tra.filter(function(t){return t.aviso_enviado}).length;
+  var pend=conFecha.filter(function(t){return dias(t.proximo_control)<=7&&!t.aviso_enviado}).sort(function(a,b){return dias(a.proximo_control)-dias(b.proximo_control)});
+  var h='<div class="top"><div><h1>'+esc(S.neg.nombre)+'</h1><div class="mut">'+(S.neg.estado==='prueba'?'Prueba hasta el '+fmt(S.neg.fin_prueba):'Plan activo')+'</div></div><button class="btn ghost" onclick="salir()">Salir</button></div>';
+  h+='<div class="stats">'+
+   '<button class="stat" onclick="go(\'pac\')"><b>'+S.pac.length+'</b><span>Pacientes</span></button>'+
+   '<button class="stat"><b>'+porV+'</b><span>Por vencer (7 días)</span></button>'+
+   '<button class="stat"><b>'+venc+'</b><span>Vencidos</span></button>'+
+   '<button class="stat"><b>'+avis+'</b><span>Avisos enviados</span></button></div>';
+  h+='<h2>Para avisar</h2>';
+  if(!pend.length)h+='<p class="mut">No hay tratamientos pendientes de aviso. Agrega pacientes y tratamientos con su próximo control.</p>';
+  pend.forEach(function(t){var p=pac(t.paciente_id);if(!p)return;var e=est(dias(t.proximo_control));
+    h+='<div class="row"><div class="av">'+esc(ini(p.nombre))+'</div><div class="grow"><b>'+esc(p.nombre)+'</b><small>'+esc(t.tipo)+' · '+fmt(t.proximo_control)+'</small><span class="badge '+e[0]+'">'+e[1]+'</span></div><button class="btn" onclick="avisar(\''+t.id+'\')">Avisar</button></div>'});
+  return h;
+}
+function vPacientes(){
+  var q=S.q.toLowerCase();
+  var r=S.pac.filter(function(p){return (p.nombre+' '+p.whatsapp).toLowerCase().indexOf(q)>-1});
+  var h='<div class="top"><h1>Pacientes</h1><button class="btn" onclick="formPaciente()">+ Nuevo</button></div>'+
+   '<input id="q" placeholder="Buscar por nombre o teléfono" value="'+esc(S.q)+'" oninput="S.q=this.value;S.focusQ=true;render()" aria-label="Buscar paciente">';
+  if(!r.length)h+='<p class="mut">'+(S.pac.length?'Sin resultados.':'Aún no hay pacientes. Pulsa «+ Nuevo» para registrar el primero.')+'</p>';
+  r.forEach(function(p){
+    var ts=S.tra.filter(function(t){return t.paciente_id===p.id&&t.proximo_control}).sort(function(a,b){return a.proximo_control<b.proximo_control?-1:1});
+    var b=ts.length?est(dias(ts[0].proximo_control)):null;
+    h+='<div class="row tap" tabindex="0" role="button" onclick="S.sel=\''+p.id+'\';render()" onkeydown="if(event.key===\'Enter\')this.click()"><div class="av">'+esc(ini(p.nombre))+'</div><div class="grow"><b>'+esc(p.nombre)+'</b><small>'+esc(p.whatsapp)+(ts.length?' · '+esc(ts[0].tipo):'')+'</small></div>'+(b?'<span class="badge '+b[0]+'">'+b[1]+'</span>':'')+'</div>'});
+  return h;
+}
+function vFicha(){
+  var p=pac(S.sel);if(!p){S.sel=null;return vPacientes()}
+  var ts=S.tra.filter(function(t){return t.paciente_id===p.id});
+  var h='<button class="back" onclick="S.sel=null;render()">‹ Pacientes</button>'+
+   '<div class="row"><div class="av">'+esc(ini(p.nombre))+'</div><div class="grow"><b>'+esc(p.nombre)+'</b><small>WhatsApp '+esc(p.whatsapp)+'</small></div><button class="btn ghost" onclick="formPaciente(\''+p.id+'\')">Editar</button></div>';
+  if(p.notas)h+='<h2>Notas</h2><div class="row"><div class="grow">'+esc(p.notas)+'</div></div>';
+  h+='<div class="top" style="margin-top:22px"><h2 style="margin:0">Tratamientos</h2><button class="btn" onclick="formTrat(\''+p.id+'\')">+ Tratamiento</button></div>';
+  if(!ts.length)h+='<p class="mut">Sin tratamientos. Agrega uno con su próximo control para activar el recordatorio.</p>';
+  ts.forEach(function(t){var e=est(dias(t.proximo_control));
+    h+='<div class="row" style="display:block"><b>'+esc(t.tipo)+'</b><small class="mut" style="display:block">'+(t.proximo_control?'Próximo control: '+fmt(t.proximo_control):'Sin fecha de control')+(t.detalle?' · '+esc(t.detalle):'')+'</small>'+
+    '<div style="margin:6px 0"><span class="badge '+e[0]+'">'+e[1]+'</span> '+(t.aviso_enviado?'<span class="badge b-ok">Aviso enviado</span>':'')+'</div>'+
+    '<div class="actions"><button class="btn" onclick="avisar(\''+t.id+'\')">Avisar por WhatsApp</button><button class="btn ghost" onclick="formTrat(\''+p.id+'\',\''+t.id+'\')">Editar</button></div></div>'});
+  return h;
+}
+
+/* ---------- FORMULARIOS ---------- */
+function abrir(html){$('sheet').innerHTML=html;$('ov').style.display='flex'}
+function cerrar(){$('ov').style.display='none'}
+$('ov').addEventListener('click',function(e){if(e.target===$('ov'))cerrar()});
+
+function formPaciente(id){
+  var p=id?pac(id):{nombre:'',whatsapp:'',notas:''};
+  abrir('<h1>'+(id?'Editar paciente':'Nuevo paciente')+'</h1><div style="height:12px"></div>'+
+   '<label for="f-n">Nombre completo</label><input id="f-n" value="'+esc(p.nombre)+'">'+
+   '<label for="f-w">WhatsApp (obligatorio)</label><input id="f-w" inputmode="tel" placeholder="0991234567" value="'+esc(p.whatsapp)+'">'+
+   '<label for="f-o">Notas</label><textarea id="f-o" rows="3">'+esc(p.notas)+'</textarea>'+
+   '<div class="actions"><button class="btn" onclick="guardarPaciente(\''+(id||'')+'\')">Guardar</button><button class="btn ghost" onclick="cerrar()">Cancelar</button>'+(id?'<button class="btn red" onclick="borrarPaciente(\''+id+'\')">Eliminar</button>':'')+'</div>');
+}
+async function guardarPaciente(id){
+  var n=$('f-n').value.trim(),w=$('f-w').value.trim(),o=$('f-o').value.trim();
+  if(!n){toast('Escribe el nombre del paciente');return}
+  if(w.replace(/\D/g,'').length<9){toast('El WhatsApp es obligatorio (mínimo 9 dígitos)');return}
+  var datos={nombre:n,whatsapp:w,notas:o||null};
+  var r=id?await sb.from('pacientes').update(datos).eq('id',id):await sb.from('pacientes').insert(Object.assign({negocio_id:S.neg.id},datos));
+  if(r.error){toast('No se pudo guardar: '+r.error.message);return}
+  cerrar();await refrescar();toast('Paciente guardado');
+}
+async function borrarPaciente(id){
+  if(!confirm('¿Eliminar este paciente y todos sus tratamientos? No se puede deshacer.'))return;
+  var r=await sb.from('pacientes').delete().eq('id',id);
+  if(r.error){toast('No se pudo eliminar');return}
+  S.sel=null;cerrar();await refrescar();toast('Paciente eliminado');
+}
+function formTrat(pid,tid){
+  var t=tid?S.tra.filter(function(x){return x.id===tid})[0]:{tipo:'',proximo_control:'',detalle:''};
+  abrir('<h1>'+(tid?'Editar tratamiento':'Nuevo tratamiento')+'</h1><div style="height:12px"></div>'+
+   '<label for="t-t">Tratamiento</label><input id="t-t" list="tipos" value="'+esc(t.tipo)+'"><datalist id="tipos">'+TIPOS.map(function(x){return '<option value="'+x+'">'}).join('')+'</datalist>'+
+   '<label for="t-f">Próximo control</label><input id="t-f" type="date" value="'+esc(t.proximo_control||'')+'">'+
+   '<label for="t-d">Detalle (opcional)</label><input id="t-d" value="'+esc(t.detalle||'')+'">'+
+   '<div class="actions"><button class="btn" onclick="guardarTrat(\''+pid+'\',\''+(tid||'')+'\')">Guardar</button><button class="btn ghost" onclick="cerrar()">Cancelar</button>'+(tid?'<button class="btn red" onclick="borrarTrat(\''+tid+'\')">Eliminar</button>':'')+'</div>');
+}
+async function guardarTrat(pid,tid){
+  var tipo=$('t-t').value.trim(),f=$('t-f').value,d=$('t-d').value.trim();
+  if(!tipo){toast('Indica el tratamiento');return}
+  var datos={tipo:tipo,proximo_control:f||null,detalle:d||null};
+  var r;
+  if(tid){
+    var ant=S.tra.filter(function(x){return x.id===tid})[0];
+    if(ant.proximo_control!==(f||null))datos.aviso_enviado=false;
+    r=await sb.from('tratamientos').update(datos).eq('id',tid);
+  } else r=await sb.from('tratamientos').insert(Object.assign({negocio_id:S.neg.id,paciente_id:pid},datos));
+  if(r.error){toast('No se pudo guardar: '+r.error.message);return}
+  cerrar();await refrescar();toast('Tratamiento guardado');
+}
+async function borrarTrat(tid){
+  if(!confirm('¿Eliminar este tratamiento?'))return;
+  var r=await sb.from('tratamientos').delete().eq('id',tid);
+  if(r.error){toast('No se pudo eliminar');return}
+  cerrar();await refrescar();toast('Tratamiento eliminado');
+}
+
+/* ---------- RECORDATORIO ---------- */
+async function avisar(tid){
+  var t=S.tra.filter(function(x){return x.id===tid})[0],p=pac(t.paciente_id);
+  var msg='Hola '+p.nombre.split(' ')[0]+', le saludamos de '+S.neg.nombre+'. Le recordamos su '+t.tipo.toLowerCase()+(t.proximo_control?' programado para el '+fmt(t.proximo_control):'')+'. Escríbanos por aquí para agendar su cita. ¡Lo esperamos!';
+  window.open('https://wa.me/'+wa(p.whatsapp)+'?text='+encodeURIComponent(msg),'_blank');
+  var r=await sb.from('tratamientos').update({aviso_enviado:true}).eq('id',tid);
+  if(!r.error){t.aviso_enviado=true;render()}
+}
+
+init();
+</script>
+</body>
+</html>

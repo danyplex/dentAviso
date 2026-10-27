@@ -81,6 +81,7 @@ var sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
 var S = {neg:null, pac:[], tra:[], cit:[], dia:'', view:'home', sel:null, q:'', f:'todos'};
 var TIPOS = ['Limpieza','Control general','Ortodoncia','Endodoncia','Blanqueamiento','Extracción','Implante','Prótesis','Otro'];
 var IC = {
+ up:'<path d="M12 16V4M7 9l5-5 5 5M4 20h16"/>',
  tooth:'<path d="M12 4C8.7 4 7.6 3 7 3 4.5 3 3 5 3 7.5c0 2 .8 3.4 1.2 5.2.5 2.2.6 6.3 2.3 6.3 1.4 0 1.4-3 2.4-4.6.4-.6 1.2-.9 3.1-.9s2.7.3 3.1.9c1 1.6 1 4.6 2.4 4.6 1.7 0 1.8-4.1 2.3-6.3.4-1.8 1.2-3.2 1.2-5.2C21 5 19.5 3 17 3c-.6 0-1.7 1-5 1z"/>',
  sparkle:'<path d="M12 3l1.8 5.200L19 10l-5.2 1.800L12 17l-1.8-5.200L5 10l5.2-1.800zM19 16l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/>',
  braces:'<rect x="3" y="8" width="18" height="8" rx="3"/><path d="M8 8v8M16 8v8M3 12h18"/>',
@@ -218,7 +219,7 @@ function vPacientes(){
     if((p.nombre+' '+p.whatsapp).toLowerCase().indexOf(q)<0)return false;
     var d=pmin(p);if(S.f==='porv')return d!==null&&d>=0&&d<=7;if(S.f==='venc')return d!==null&&d<0;return true});
   var ch=[['todos','Todos'],['porv','Por vencer'],['venc','Vencidos']].map(function(c){return '<button class="chip" aria-pressed="'+(S.f===c[0])+'" onclick="S.f=\''+c[0]+'\';render()">'+c[1]+'</button>'}).join('');
-  var h='<div class="top"><h1>Pacientes</h1><button class="btn" onclick="formPaciente()">'+ic('plus',18)+'Nuevo</button></div>'+
+  var h='<div class="top"><h1>Pacientes</h1><div class="actions" style="margin:0"><button class="btn ghost" onclick="formImportar()">'+ic('up',18)+'Importar</button><button class="btn" onclick="formPaciente()">'+ic('plus',18)+'Nuevo</button></div></div>'+
    '<div class="search">'+ic('search')+'<input id="q" placeholder="Buscar por nombre o teléfono" value="'+esc(S.q)+'" oninput="S.q=this.value;S.focusQ=true;render()" aria-label="Buscar paciente"></div><div class="chips">'+ch+'</div>';
   if(!r.length)h+='<div class="empty"><div class="ci">'+ic('users')+'</div>'+(S.pac.length?'Sin resultados.':'Aún no hay pacientes.<br>Pulsa «Nuevo» para registrar el primero.')+'</div>';
   r.forEach(function(p){
@@ -240,7 +241,7 @@ function vFicha(){
   ts.forEach(function(t){var e=est(dias(t.proximo_control)),ti=tinfo(t.tipo);
     h+='<div class="card"><div style="display:flex;gap:12px;align-items:center"><div class="ci" style="'+tint(ti[1])+'">'+ic(ti[0])+'</div><div class="grow"><b>'+esc(t.tipo)+'</b><small>'+(t.proximo_control?'Próximo control: '+fmt(t.proximo_control):'Sin fecha de control')+(t.detalle?' · '+esc(t.detalle):'')+'</small></div></div>'+
     '<div style="margin:10px 0 2px"><span class="badge '+e[0]+'">'+e[1]+'</span> '+(t.aviso_enviado?'<span class="badge b-ok">Aviso enviado</span>':'')+'</div>'+
-    '<div class="actions"><button class="btn" onclick="avisar(\''+t.id+'\')">'+ic('chat',18)+'Avisar por WhatsApp</button><button class="btn ghost" onclick="formTrat(\''+p.id+'\',\''+t.id+'\')">'+ic('edit',18)+'Editar</button></div></div>'});
+    '<div class="actions"><button class="btn" onclick="avisar(\''+t.id+'\')">'+ic('chat',18)+'Avisar por WhatsApp</button><button class="btn ghost" onclick="formRealizado(\''+t.id+'\')">'+ic('check',18)+'Realizado</button><button class="btn ghost" onclick="formTrat(\''+p.id+'\',\''+t.id+'\')">'+ic('edit',18)+'Editar</button></div></div>'});
   return h;
 }
 
@@ -295,6 +296,139 @@ async function borrarTrat(tid){
   var r=await sb.from('tratamientos').delete().eq('id',tid);
   if(r.error){toast('No se pudo eliminar');return}
   cerrar();await refrescar();toast('Tratamiento eliminado');
+}
+
+/* ---------- REALIZADO ---------- */
+/* PURE-START */
+function mesesTipo(t){t=(t||'').toLowerCase();if(t.indexOf('limpie')>-1||t.indexOf('blanque')>-1)return 6;if(t.indexOf('ortod')>-1||t.indexOf('endod')>-1)return 1;if(t.indexOf('control')>-1)return 12;return 3}
+function sumaMeses(f,n){var p=f.split('-').map(Number),m=new Date(p[0],p[1]-1+n,1),u=new Date(m.getFullYear(),m.getMonth()+1,0).getDate();m.setDate(Math.min(p[2],u));return isoDia(m)}
+/* PURE-END */
+function formRealizado(tid){
+  var t=S.tra.filter(function(x){return x.id===tid})[0],base=isoDia(new Date());
+  var ch=[1,2,3,6,12].map(function(n){return '<button class="chip" onclick="$(\'r-f\').value=\''+sumaMeses(base,n)+'\'">'+(n===12?'1 año':n+(n===1?' mes':' meses'))+'</button>'}).join('');
+  abrir('<h1>Control realizado</h1><p class="mut" style="margin:4px 0 14px">'+esc(t.tipo)+'. ¿Cuándo es el próximo control?</p>'+
+   '<div class="chips" style="flex-wrap:wrap">'+ch+'</div>'+
+   '<label for="r-f">Próximo control</label><input id="r-f" type="date" value="'+sumaMeses(base,mesesTipo(t.tipo))+'">'+
+   '<div class="actions"><button class="btn" onclick="guardarRealizado(\''+tid+'\',false)">Guardar próximo control</button><button class="btn ghost" onclick="guardarRealizado(\''+tid+'\',true)">Terminado, sin próximo control</button><button class="btn ghost" onclick="cerrar()">Cancelar</button></div>');
+}
+async function guardarRealizado(tid,fin){
+  var f=fin?null:$('r-f').value;
+  if(!fin&&!f){toast('Elige la fecha del próximo control');return}
+  var r=await sb.from('tratamientos').update({proximo_control:f,aviso_enviado:false}).eq('id',tid);
+  if(r.error){toast('No se pudo guardar: '+r.error.message);return}
+  cerrar();await refrescar();toast(fin?'Tratamiento marcado como terminado':'Próximo control: '+fmt(f));
+}
+
+/* ---------- IMPORTAR PACIENTES ---------- */
+/* PURE-START */
+function normH(h){return String(h==null?'':h).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z]/g,'')}
+function parseCSV(txt){
+  txt=String(txt).replace(/^\uFEFF/,'');
+  var l1=txt.split(/\r?\n/)[0]||'',dl=';';
+  var c=(l1.match(/;/g)||[]).length,k=(l1.match(/,/g)||[]).length,t=(l1.match(/\t/g)||[]).length;
+  if(k>c&&k>=t)dl=',';else if(t>c&&t>k)dl='\t';
+  var rows=[],row=[],cur='',q=false;
+  for(var i=0;i<txt.length;i++){var ch=txt[i];
+    if(q){if(ch==='"'){if(txt[i+1]==='"'){cur+='"';i++}else q=false}else cur+=ch}
+    else if(ch==='"')q=true;
+    else if(ch===dl){row.push(cur);cur=''}
+    else if(ch==='\n'||ch==='\r'){if(ch==='\r'&&txt[i+1]==='\n')i++;row.push(cur);rows.push(row);row=[];cur=''}
+    else cur+=ch}
+  if(cur!==''||row.length){row.push(cur);rows.push(row)}
+  return rows;
+}
+function parseFecha(v){
+  v=String(v==null?'':v).trim();if(!v)return '';
+  var y,m,d,a=v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/),b=v.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/);
+  if(a){y=+a[1];m=+a[2];d=+a[3]}else if(b){d=+b[1];m=+b[2];y=+b[3];if(y<100)y+=2000}else return null;
+  var dt=new Date(y,m-1,d);
+  if(dt.getFullYear()!==y||dt.getMonth()!==m-1||dt.getDate()!==d)return null;
+  return y+'-'+(m<10?'0':'')+m+'-'+(d<10?'0':'')+d;
+}
+function limpiaTel(v){var d=String(v==null?'':v).replace(/\D/g,'');if(d.length===9&&d.charAt(0)==='9')d='0'+d;return d}
+/* PURE-END */
+var SIN={nombre:['nombre','nombrecompleto','paciente'],whatsapp:['whatsapp','telefono','celular','movil','tel'],trat:['tratamiento'],fecha:['proximocontrol','proximo','fecha','fechacontrol'],notas:['notas','nota','observaciones']};
+function cargarXLSX(){
+  return new Promise(function(ok,no){
+    if(window.XLSX)return ok();
+    var sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    sc.onload=function(){ok()};sc.onerror=function(){no(new Error('No se pudo cargar el lector de Excel'))};
+    document.head.appendChild(sc);
+  });
+}
+function formImportar(){
+  S.imp=null;
+  abrir('<h1>Importar pacientes</h1><p class="mut" style="margin:4px 0 12px">Sube un archivo de Excel (.xlsx) o CSV con una fila por paciente. Columnas: <b>nombre</b>, <b>whatsapp</b>, y opcionalmente <b>tratamiento</b>, <b>proximo_control</b> (dd/mm/aaaa) y <b>notas</b>. Los pacientes cuyo WhatsApp ya existe se omiten.</p>'+
+   '<div class="actions" style="margin:0 0 12px"><button class="btn ghost" onclick="plantilla()">Descargar plantilla</button></div>'+
+   '<label for="imp-f">Archivo</label><input id="imp-f" type="file" accept=".xlsx,.xls,.csv" onchange="leerArchivo(this)">'+
+   '<div id="imp-p"></div><div class="actions"><button class="btn ghost" onclick="cerrar()">Cerrar</button></div>');
+}
+async function plantilla(){
+  try{await cargarXLSX()}catch(e){toast(e.message);return}
+  var ws=XLSX.utils.aoa_to_sheet([['nombre','whatsapp','tratamiento','proximo_control','notas'],
+    ['María Torres','0991234567','Ortodoncia','15/11/2026','Alergia a látex'],
+    ['Luis Andrade','0987654321','Limpieza','20/12/2026',''],
+    ['Ana Villacís','0963334455','','','Paciente nueva']]);
+  ws['!cols']=[{wch:26},{wch:14},{wch:18},{wch:16},{wch:30}];
+  var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Pacientes');
+  XLSX.writeFile(wb,'plantilla-pacientes.xlsx');
+}
+async function leerArchivo(inp){
+  var f=inp.files[0];if(!f)return;
+  $('imp-p').innerHTML='<p class="mut">Leyendo archivo…</p>';
+  try{
+    var filas;
+    if(/\.csv$/i.test(f.name)){filas=parseCSV(await f.text())}
+    else{await cargarXLSX();var wb=XLSX.read(await f.arrayBuffer(),{type:'array'});filas=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:false,defval:''})}
+    prepararImport(filas);
+  }catch(e){$('imp-p').innerHTML='<p style="color:var(--bad)">No se pudo leer el archivo. Revisa que sea Excel (.xlsx) o CSV.</p>'}
+}
+function prepararImport(filas){
+  var P=$('imp-p');
+  if(!filas.length){P.innerHTML='<p style="color:var(--bad)">El archivo está vacío.</p>';return}
+  var hd=filas[0].map(normH),ix={};
+  Object.keys(SIN).forEach(function(k){ix[k]=hd.findIndex(function(h){return SIN[k].indexOf(h)>-1})});
+  if(ix.nombre<0||ix.whatsapp<0){P.innerHTML='<p style="color:var(--bad)">No encuentro las columnas «nombre» y «whatsapp» en la primera fila. Usa la plantilla.</p>';return}
+  if(filas.length>1001){P.innerHTML='<p style="color:var(--bad)">El archivo tiene más de 1000 pacientes. Divídelo en partes.</p>';return}
+  var tiene={};S.pac.forEach(function(p){tiene[wa(p.whatsapp)]=1});
+  var ok=[],err=[],dup=0;
+  for(var i=1;i<filas.length;i++){
+    var r=filas[i],g=function(k){return ix[k]>-1?String(r[ix[k]]==null?'':r[ix[k]]).trim():''};
+    var n=g('nombre'),w=limpiaTel(g('whatsapp')),t=g('trat'),fr=g('fecha'),o=g('notas');
+    if(!n&&!w&&!t&&!fr&&!o)continue;
+    if(!n){err.push('Fila '+(i+1)+': falta el nombre');continue}
+    if(w.length<9){err.push('Fila '+(i+1)+' ('+n+'): WhatsApp no válido');continue}
+    var fe=parseFecha(fr);
+    if(fe===null){err.push('Fila '+(i+1)+' ('+n+'): fecha no válida «'+fr+'», usa dd/mm/aaaa');continue}
+    var key=wa(w);if(tiene[key]){dup++;continue}
+    tiene[key]=1;
+    if(fe&&!t)t='Control general';
+    ok.push({n:n,w:w,t:t,f:fe,o:o});
+  }
+  S.imp=ok;
+  var h='<div class="card" style="margin:12px 0"><b>'+ok.length+' listos para importar</b><div class="mut">'+err.length+' con error · '+dup+' ya existen (se omiten)</div></div>';
+  if(err.length)h+='<p class="mut" style="margin:0 0 8px">Corrige estas filas en tu archivo si las quieres incluir:</p>'+err.slice(0,8).map(function(e){return '<div class="mut" style="color:var(--bad)">'+esc(e)+'</div>'}).join('')+(err.length>8?'<div class="mut">…y '+(err.length-8)+' más</div>':'');
+  if(ok.length){
+    h+='<p class="mut" style="margin:12px 0 6px">Vista previa:</p>'+ok.slice(0,4).map(function(x){return '<div class="mut">'+esc(x.n)+' · '+esc(x.w)+(x.t?' · '+esc(x.t):'')+(x.f?' · '+fmt(x.f):'')+'</div>'}).join('')+(ok.length>4?'<div class="mut">…y '+(ok.length-4)+' más</div>':'')+
+     '<div class="actions" style="margin-top:12px"><button class="btn" id="bi" onclick="importar()">Importar '+ok.length+(ok.length===1?' paciente':' pacientes')+'</button></div>';
+  }
+  P.innerHTML=h;
+}
+async function importar(){
+  var L=S.imp;if(!L||!L.length)return;
+  $('bi').disabled=true;$('bi').textContent='Importando…';
+  var ps=L.map(function(x){return {id:crypto.randomUUID(),negocio_id:S.neg.id,nombre:x.n,whatsapp:x.w,notas:x.o||null}});
+  for(var i=0;i<ps.length;i+=100){
+    var r=await sb.from('pacientes').insert(ps.slice(i,i+100));
+    if(r.error){toast('Error al importar: '+r.error.message);await refrescar();return}
+  }
+  var ts=[];
+  L.forEach(function(x,i){if(x.t)ts.push({negocio_id:S.neg.id,paciente_id:ps[i].id,tipo:x.t,proximo_control:x.f||null})});
+  for(var j=0;j<ts.length;j+=100){
+    var r2=await sb.from('tratamientos').insert(ts.slice(j,j+100));
+    if(r2.error){toast('Pacientes importados, pero falló algún tratamiento: '+r2.error.message);cerrar();S.imp=null;await refrescar();return}
+  }
+  cerrar();S.imp=null;await refrescar();toast(L.length+(L.length===1?' paciente importado':' pacientes importados'));
 }
 
 /* ---------- CITAS ---------- */

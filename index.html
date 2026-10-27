@@ -43,14 +43,14 @@ h1{font-size:22px;margin:0;font-weight:800}h2{font-size:16px;margin:24px 0 10px;
 .b-ok{background:var(--okS);color:var(--ok)}.b-warn{background:var(--warnS);color:var(--warn)}.b-bad{background:var(--badS);color:var(--bad)}
 .btn{border:0;border-radius:12px;padding:10px 14px;font:inherit;font-weight:600;background:var(--btn);color:var(--btnT);cursor:pointer;display:inline-flex;align-items:center;gap:7px;justify-content:center}
 .btn.ghost{background:var(--priS);color:var(--pri)}.btn.red{background:var(--badS);color:var(--bad)}.btn.full{width:100%}.btn:disabled{opacity:.6}
-.btn:focus-visible,.tab:focus-visible,.stat:focus-visible,.tap:focus-visible,.chip:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--pri);outline-offset:2px}
-input,textarea{width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;margin-bottom:10px}
+.btn:focus-visible,.tab:focus-visible,.stat:focus-visible,.tap:focus-visible,.chip:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid var(--pri);outline-offset:2px}
+input,textarea,select{width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;margin-bottom:10px}
 label{display:block;font-size:13px;font-weight:600;margin:0 0 4px}
 .search{position:relative}.search .i{position:absolute;left:12px;top:13px;color:var(--mut)}.search input{padding-left:40px}
 .chips{display:flex;gap:8px;overflow-x:auto;margin:0 0 12px;padding-bottom:2px}
 .chip{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:99px;padding:7px 14px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
 .chip[aria-pressed=true]{background:var(--btn);color:var(--btnT);border-color:var(--btn)}
-.tabs{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom,0px));width:min(92%,420px);background:var(--card);border-radius:22px;box-shadow:0 10px 30px rgba(11,37,69,.22);display:none;grid-template-columns:1fr 1fr;padding:6px;gap:6px;border:1px solid var(--line)}
+.tabs{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom,0px));width:min(92%,420px);background:var(--card);border-radius:22px;box-shadow:0 10px 30px rgba(11,37,69,.22);display:none;grid-template-columns:repeat(3,1fr);padding:6px;gap:6px;border:1px solid var(--line)}
 .tab{background:none;border:0;border-radius:16px;padding:8px 4px;color:var(--mut);font:inherit;font-size:12px;font-weight:600;cursor:pointer;display:grid;justify-items:center;gap:2px}
 .tab[aria-current=true]{background:var(--priS);color:var(--pri)}
 .back{background:none;border:0;color:var(--pri);font:inherit;font-weight:600;padding:0;margin-bottom:12px;cursor:pointer}
@@ -68,6 +68,7 @@ label{display:block;font-size:13px;font-weight:600;margin:0 0 4px}
 <div class="app" id="app"></div>
 <div class="tabs" id="tabs">
   <button class="tab" id="t-home" onclick="go('home')"></button>
+  <button class="tab" id="t-cal" onclick="go('cal')"></button>
   <button class="tab" id="t-pac" onclick="go('pac')"></button>
 </div>
 <div class="ov" id="ov"><div class="sheet" id="sheet"></div></div>
@@ -77,7 +78,7 @@ label{display:block;font-size:13px;font-weight:600;margin:0 0 4px}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 var sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
-var S = {neg:null, pac:[], tra:[], view:'home', sel:null, q:'', f:'todos'};
+var S = {neg:null, pac:[], tra:[], cit:[], dia:'', view:'home', sel:null, q:'', f:'todos'};
 var TIPOS = ['Limpieza','Control general','Ortodoncia','Endodoncia','Blanqueamiento','Extracción','Implante','Prótesis','Otro'];
 var IC = {
  tooth:'<path d="M12 4C8.7 4 7.6 3 7 3 4.5 3 3 5 3 7.5c0 2 .8 3.4 1.2 5.2.5 2.2.6 6.3 2.3 6.3 1.4 0 1.4-3 2.4-4.6.4-.6 1.2-.9 3.1-.9s2.7.3 3.1.9c1 1.6 1 4.6 2.4 4.6 1.7 0 1.8-4.1 2.3-6.3.4-1.8 1.2-3.2 1.2-5.2C21 5 19.5 3 17 3c-.6 0-1.7 1-5 1z"/>',
@@ -93,6 +94,7 @@ var IC = {
  send:'<path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/>',
  chat:'<path d="M21 11.500a8.5 8.5 0 0 1-12.6 7.400L3 20l1.2-5.200A8.5 8.5 0 1 1 21 11.500z"/>',
  plus:'<path d="M12 5v14M5 12h14"/>',
+ cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
  search:'<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
  edit:'<path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4"/>',
  out:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>'
@@ -133,7 +135,7 @@ async function login(){
   if(r.error){showLogin('Correo o contraseña incorrectos.');return}
   load();
 }
-async function salir(){await sb.auth.signOut();S={neg:null,pac:[],tra:[],view:'home',sel:null,q:'',f:'todos'};showLogin()}
+async function salir(){await sb.auth.signOut();S={neg:null,pac:[],tra:[],cit:[],dia:'',view:'home',sel:null,q:'',f:'todos'};showLogin()}
 async function load(){
   var per=await sb.from('perfiles').select('negocio_id,nombre').maybeSingle();
   if(per.error||!per.data){showLogin('Este usuario no tiene una clínica asignada.');return}
@@ -146,9 +148,9 @@ async function load(){
   await refrescar();
 }
 async function refrescar(){
-  var r=await Promise.all([sb.from('pacientes').select('*').order('nombre'),sb.from('tratamientos').select('*').order('proximo_control')]);
-  if(r[0].error||r[1].error){toast('Error al cargar datos');return}
-  S.pac=r[0].data||[];S.tra=r[1].data||[];render();
+  var r=await Promise.all([sb.from('pacientes').select('*').order('nombre'),sb.from('tratamientos').select('*').order('proximo_control'),sb.from('citas').select('*').order('fecha_hora')]);
+  if(r[0].error||r[1].error||r[2].error){toast('Error al cargar datos');return}
+  S.pac=r[0].data||[];S.tra=r[1].data||[];S.cit=r[2].data||[];render();
 }
 
 /* ---------- VISTAS ---------- */
@@ -158,9 +160,10 @@ function pac(id){return S.pac.filter(function(p){return p.id===id})[0]}
 function pmin(p){var ds=S.tra.filter(function(t){return t.paciente_id===p.id&&t.proximo_control}).map(function(t){return dias(t.proximo_control)});return ds.length?Math.min.apply(null,ds):null}
 function render(){
   document.body.classList.remove('auth');$('tabs').style.display='grid';
-  $('t-home').innerHTML=ic('home')+'Inicio';$('t-pac').innerHTML=ic('users')+'Pacientes';
-  $('t-home').setAttribute('aria-current',S.view==='home');$('t-pac').setAttribute('aria-current',S.view==='pac');
-  $('app').innerHTML=S.view==='home'?vHome():(S.sel?vFicha():vPacientes());
+  $('t-home').innerHTML=ic('home')+'Inicio';$('t-cal').innerHTML=ic('cal')+'Agenda';$('t-pac').innerHTML=ic('users')+'Pacientes';
+  $('t-home').setAttribute('aria-current',S.view==='home');$('t-cal').setAttribute('aria-current',S.view==='cal');$('t-pac').setAttribute('aria-current',S.view==='pac');
+  if(!S.dia)S.dia=isoDia(new Date());
+  $('app').innerHTML=S.view==='home'?vHome():S.view==='cal'?vAgenda():(S.sel?vFicha():vPacientes());
   if(S.focusQ){var i=$('q');if(i){i.focus();i.setSelectionRange(S.q.length,S.q.length)}S.focusQ=false}
 }
 function vHome(){
@@ -180,6 +183,8 @@ function vHome(){
    '<button class="stat" onclick="verFiltro(\'porv\')"><div class="ci" style="'+tint('#C27A00')+'">'+ic('clock')+'</div><b>'+porV+'</b><span>Por vencer (7 días)</span></button>'+
    '<button class="stat" onclick="verFiltro(\'venc\')"><div class="ci" style="'+tint('#D6453D')+'">'+ic('alert')+'</div><b>'+venc+'</b><span>Vencidos</span></button>'+
    '<button class="stat"><div class="ci" style="'+tint('#16825A')+'">'+ic('send')+'</div><b>'+avis+'</b><span>Avisos enviados</span></button></div>';
+  var chy=citasDe(isoDia(new Date()));
+  h+='<div class="top" style="margin-top:24px"><h2 style="margin:0">Citas de hoy</h2><button class="btn ghost" onclick="S.dia=isoDia(new Date());go(\'cal\')">Ver agenda</button></div>'+(chy.length?chy.map(function(c){return filaCita(c)}).join(''):'<div class="empty"><div class="ci">'+ic('cal')+'</div>Sin citas para hoy.</div>');
   h+='<h2 id="pa">Para avisar</h2>';
   if(!pend.length)h+='<div class="empty"><div class="ci">'+ic('check')+'</div>Todo al día. No hay avisos pendientes.</div>';
   pend.forEach(function(t){var p=pac(t.paciente_id);if(!p)return;var e=est(dias(t.proximo_control)),ti=tinfo(t.tipo);
@@ -207,6 +212,8 @@ function vFicha(){
   var h='<button class="back" onclick="S.sel=null;render()">‹ Pacientes</button>'+
    '<div class="hero" style="padding:18px"><div style="display:flex;gap:14px;align-items:center"><div class="av" style="width:56px;height:56px;font-size:18px;background:rgba(255,255,255,.18);color:#fff">'+esc(ini(p.nombre))+'</div><div class="grow"><h1 style="margin:0;font-size:20px">'+esc(p.nombre)+'</h1><small>WhatsApp '+esc(p.whatsapp)+'</small></div><button class="btn" style="background:rgba(255,255,255,.18);color:#fff" onclick="formPaciente(\''+p.id+'\')" aria-label="Editar paciente">'+ic('edit',18)+'</button></div></div>';
   if(p.notas)h+='<h2>Notas</h2><div class="card">'+esc(p.notas)+'</div>';
+  var cp=S.cit.filter(function(c){return c.paciente_id===p.id&&new Date(c.fecha_hora)>=hoy()}).sort(function(a,b){return a.fecha_hora<b.fecha_hora?-1:1});
+  h+='<div class="top" style="margin-top:24px"><h2 style="margin:0">Citas</h2><button class="btn" onclick="formCita(\'\',\''+p.id+'\')">'+ic('plus',18)+'Agendar</button></div>'+(cp.length?cp.map(function(c){return filaCita(c,true)}).join(''):'<p class="mut">Sin citas próximas.</p>');
   h+='<div class="top" style="margin-top:24px"><h2 style="margin:0">Tratamientos</h2><button class="btn" onclick="formTrat(\''+p.id+'\')">'+ic('plus',18)+'Agregar</button></div>';
   if(!ts.length)h+='<div class="empty"><div class="ci">'+ic('tooth')+'</div>Sin tratamientos.<br>Agrega uno con su próximo control para activar el recordatorio.</div>';
   ts.forEach(function(t){var e=est(dias(t.proximo_control)),ti=tinfo(t.tipo);
@@ -267,6 +274,81 @@ async function borrarTrat(tid){
   var r=await sb.from('tratamientos').delete().eq('id',tid);
   if(r.error){toast('No se pudo eliminar');return}
   cerrar();await refrescar();toast('Tratamiento eliminado');
+}
+
+/* ---------- CITAS ---------- */
+function pad(n){return (n<10?'0':'')+n}
+function isoDia(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+function cDia(c){return isoDia(new Date(c.fecha_hora))}
+function cHora(c){var d=new Date(c.fecha_hora);return pad(d.getHours())+':'+pad(d.getMinutes())}
+function citasDe(dia){return S.cit.filter(function(c){return cDia(c)===dia}).sort(function(a,b){return a.fecha_hora<b.fecha_hora?-1:1})}
+function filaCita(c,conFecha){
+  var p=pac(c.paciente_id);if(!p)return '';
+  return '<div class="row tap" tabindex="0" role="button" onclick="verCita(\''+c.id+'\')" onkeydown="if(event.key===\'Enter\')this.click()"><div class="ci" style="'+tint('#0B6E79')+';width:58px;font-weight:800;font-size:14px">'+cHora(c)+'</div><div class="grow"><b>'+esc(p.nombre)+'</b><small>'+(conFecha?fmt(cDia(c))+' · ':'')+esc(c.motivo||'Cita')+'</small></div><span class="badge '+(c.confirmada?'b-ok':'b-warn')+'">'+(c.confirmada?'Confirmada':'Por confirmar')+'</span></div>';
+}
+function moverDia(n){var p=S.dia.split('-').map(Number);S.dia=isoDia(new Date(p[0],p[1]-1,p[2]+n));render()}
+function vAgenda(){
+  var p=S.dia.split('-').map(Number),dt=new Date(p[0],p[1]-1,p[2]);
+  var esHoy=S.dia===isoDia(new Date()),cs=citasDe(S.dia);
+  var lab=dt.toLocaleDateString('es-EC',{weekday:'long',day:'numeric',month:'long'});
+  var h='<div class="top"><h1>Agenda</h1><button class="btn" onclick="formCita()">'+ic('plus',18)+'Nueva cita</button></div>'+
+   '<div class="card" style="display:flex;align-items:center;gap:8px"><button class="btn ghost" onclick="moverDia(-1)" aria-label="Día anterior">‹</button>'+
+   '<div class="grow" style="text-align:center"><b style="text-transform:capitalize">'+esc(lab)+'</b><small>'+(esHoy?'Hoy · ':'')+cs.length+(cs.length===1?' cita':' citas')+'</small></div>'+
+   (esHoy?'':'<button class="btn ghost" onclick="S.dia=isoDia(new Date());render()">Hoy</button>')+
+   '<button class="btn ghost" onclick="moverDia(1)" aria-label="Día siguiente">›</button></div>';
+  if(!cs.length)h+='<div class="empty"><div class="ci">'+ic('cal')+'</div>No hay citas este día.<br>Pulsa «Nueva cita» para agendar una.</div>';
+  cs.forEach(function(c){h+=filaCita(c)});
+  return h;
+}
+function verCita(id){
+  var c=S.cit.filter(function(x){return x.id===id})[0],p=pac(c.paciente_id);
+  abrir('<h1>'+esc(p.nombre)+'</h1><p class="mut" style="margin:4px 0 14px">'+fmt(cDia(c))+' a las '+cHora(c)+(c.motivo?' · '+esc(c.motivo):'')+'</p>'+
+   '<span class="badge '+(c.confirmada?'b-ok':'b-warn')+'">'+(c.confirmada?'Confirmada':'Por confirmar')+'</span>'+
+   '<div class="actions" style="margin-top:14px"><button class="btn" onclick="recordarCita(\''+id+'\')">'+ic('chat',18)+'Recordar por WhatsApp</button>'+
+   '<button class="btn ghost" onclick="toggleConfirmada(\''+id+'\')">'+(c.confirmada?'Quitar confirmación':'Marcar confirmada')+'</button>'+
+   '<button class="btn ghost" onclick="formCita(\''+id+'\')">'+ic('edit',18)+'Editar</button><button class="btn ghost" onclick="cerrar()">Cerrar</button></div>');
+}
+function recordarCita(id){
+  var c=S.cit.filter(function(x){return x.id===id})[0],p=pac(c.paciente_id);
+  var msg='Hola '+p.nombre.split(' ')[0]+', le saludamos de '+S.neg.nombre+'. Le recordamos su cita el '+fmt(cDia(c))+' a las '+cHora(c)+(c.motivo?' ('+c.motivo+')':'')+'. ¿Nos confirma su asistencia respondiendo este mensaje? ¡Lo esperamos!';
+  window.open('https://wa.me/'+wa(p.whatsapp)+'?text='+encodeURIComponent(msg),'_blank');
+}
+async function toggleConfirmada(id){
+  var c=S.cit.filter(function(x){return x.id===id})[0],v=!c.confirmada;
+  var r=await sb.from('citas').update({confirmada:v}).eq('id',id);
+  if(r.error){toast('No se pudo actualizar');return}
+  c.confirmada=v;cerrar();render();toast(v?'Cita confirmada':'Confirmación quitada');
+}
+function formCita(id,pid){
+  if(!S.pac.length){toast('Primero registra un paciente');return}
+  var c=id?S.cit.filter(function(x){return x.id===id})[0]:null;
+  var f=c?cDia(c):(S.view==='cal'?S.dia:isoDia(new Date())),h=c?cHora(c):'09:00',sel=c?c.paciente_id:(pid||'');
+  var ops='<option value="">Selecciona un paciente</option>'+S.pac.map(function(p){return '<option value="'+p.id+'"'+(p.id===sel?' selected':'')+'>'+esc(p.nombre)+'</option>'}).join('');
+  abrir('<h1>'+(c?'Editar cita':'Nueva cita')+'</h1><div style="height:14px"></div>'+
+   '<label for="c-p">Paciente</label><select id="c-p">'+ops+'</select>'+
+   '<label for="c-f">Fecha</label><input id="c-f" type="date" value="'+f+'">'+
+   '<label for="c-h">Hora</label><input id="c-h" type="time" value="'+h+'">'+
+   '<label for="c-m">Motivo (opcional)</label><input id="c-m" value="'+esc(c?c.motivo||'':'')+'" placeholder="Limpieza, control, dolor…">'+
+   '<div class="actions"><button class="btn" onclick="guardarCita(\''+(id||'')+'\')">Guardar</button><button class="btn ghost" onclick="cerrar()">Cancelar</button>'+(c?'<button class="btn red" onclick="borrarCita(\''+id+'\')">Eliminar</button>':'')+'</div>');
+}
+async function guardarCita(id){
+  var pid=$('c-p').value,f=$('c-f').value,h=$('c-h').value,m=$('c-m').value.trim();
+  if(!pid){toast('Selecciona el paciente');return}
+  if(!f||!h){toast('Indica la fecha y la hora');return}
+  var datos={paciente_id:pid,fecha_hora:new Date(f+'T'+h).toISOString(),motivo:m||null},r;
+  if(id){var ant=S.cit.filter(function(x){return x.id===id})[0];
+    if(ant.fecha_hora!==datos.fecha_hora&&new Date(ant.fecha_hora).getTime()!==new Date(datos.fecha_hora).getTime())datos.confirmada=false;
+    r=await sb.from('citas').update(datos).eq('id',id);
+  }else r=await sb.from('citas').insert(Object.assign({negocio_id:S.neg.id},datos));
+  if(r.error){toast('No se pudo guardar: '+r.error.message);return}
+  if(S.view==='cal')S.dia=f;
+  cerrar();await refrescar();toast('Cita guardada');
+}
+async function borrarCita(id){
+  if(!confirm('¿Eliminar esta cita?'))return;
+  var r=await sb.from('citas').delete().eq('id',id);
+  if(r.error){toast('No se pudo eliminar');return}
+  cerrar();await refrescar();toast('Cita eliminada');
 }
 
 /* ---------- RECORDATORIO ---------- */

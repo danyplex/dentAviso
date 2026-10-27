@@ -136,9 +136,30 @@ async function login(){
   load();
 }
 async function salir(){await sb.auth.signOut();S={neg:null,pac:[],tra:[],cit:[],dia:'',view:'home',sel:null,q:'',f:'todos'};showLogin()}
+function pantallaClave(msg){
+  document.body.classList.add('auth');$('tabs').style.display='none';
+  $('app').innerHTML='<div class="login"><div class="logo">'+ic('tooth')+'</div><h1>Elige tu contraseña</h1><p style="opacity:.85;margin:6px 0 0">Es tu primer ingreso. Crea una contraseña propia para tu clínica.</p>'+
+  '<div class="card"><label for="p1">Nueva contraseña (mínimo 8 caracteres)</label><input id="p1" type="password" autocomplete="new-password">'+
+  '<label for="p2">Repite la contraseña</label><input id="p2" type="password" autocomplete="new-password">'+
+  '<button class="btn full" id="bp" onclick="guardarClave()">Guardar y entrar</button>'+
+  '<button class="btn ghost full" style="margin-top:8px" onclick="salir()">Salir</button>'+
+  (msg?'<p style="color:var(--bad);margin:10px 0 0">'+esc(msg)+'</p>':'')+'</div></div>';
+}
+async function guardarClave(){
+  var a=$('p1').value,b=$('p2').value;
+  if(a.length<8){pantallaClave('La contraseña debe tener al menos 8 caracteres.');return}
+  if(a!==b){pantallaClave('Las contraseñas no coinciden.');return}
+  $('bp').disabled=true;
+  var r=await sb.auth.updateUser({password:a});
+  if(r.error){pantallaClave(/different|same/i.test(r.error.message)?'La nueva contraseña debe ser distinta a la temporal.':'No se pudo guardar: '+r.error.message);return}
+  var c=await sb.rpc('clave_cambiada');
+  if(c.error){pantallaClave('Se guardó la contraseña, pero falló al finalizar: '+c.error.message);return}
+  load();
+}
 async function load(){
-  var per=await sb.from('perfiles').select('negocio_id,nombre').maybeSingle();
+  var per=await sb.from('perfiles').select('negocio_id,nombre,cambiar_clave').maybeSingle();
   if(per.error||!per.data){showLogin('Este usuario no tiene una clínica asignada.');return}
+  if(per.data.cambiar_clave){pantallaClave();return}
   var n=await sb.from('negocios').select('*').eq('id',per.data.negocio_id).single();
   if(n.error){showLogin('No se pudo cargar la clínica.');return}
   S.neg=n.data;var d=dias(S.neg.fin_prueba);

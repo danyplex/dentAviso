@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0B2545">
+<title>DentAviso · Administración</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F3F8FA;--card:#fff;--ink:#0B2545;--mut:#64788A;--line:#E1EAF0;--pri:#0B6E79;--priS:#DDF4F6;--btn:#0B6E79;--btnT:#fff;--ok:#16825A;--okS:#DEF5EA;--warn:#A66300;--warnS:#FFF0D1;--bad:#C93A32;--badS:#FDE3E1;--sh:0 6px 20px rgba(11,37,69,.08)}
+@media (prefers-color-scheme:dark){:root{--bg:#0A1626;--card:#12243A;--ink:#E8F1F8;--mut:#8FA6BA;--line:#213852;--pri:#3CC9D6;--priS:#123A47;--btn:#3CC9D6;--btnT:#06202A;--ok:#5CD6A0;--okS:#103A2B;--warn:#F0B74F;--warnS:#3E3010;--bad:#F2847B;--badS:#4A211E;--sh:0 6px 20px rgba(0,0,0,.35)}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;font-size:15px;line-height:1.45}
+.app{max-width:760px;margin:0 auto;min-height:100vh;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(40px + env(safe-area-inset-bottom,0px))}
+h1{font-size:22px;margin:0;font-weight:800}h2{font-size:16px;margin:22px 0 10px;font-weight:800}
+.mut{color:var(--mut);font-size:13px}
+.hero{background:linear-gradient(135deg,#0B2545 0%,#0B5F73 100%);color:#fff;border-radius:24px;padding:20px;box-shadow:var(--sh)}
+.hero small{opacity:.85;display:block;font-size:13px}.hero h1{margin:2px 0 14px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.btn{border:0;border-radius:12px;padding:10px 14px;font:inherit;font-weight:600;background:var(--btn);color:var(--btnT);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.btn.ghost{background:var(--priS);color:var(--pri)}.btn.red{background:var(--badS);color:var(--bad)}.btn.white{background:#fff;color:#0B2545}.btn.glass{background:rgba(255,255,255,.18);color:#fff}
+.btn:disabled{opacity:.6}
+.btn:focus-visible,.chip:focus-visible,input:focus-visible{outline:3px solid var(--pri);outline-offset:2px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+@media (max-width:560px){.stats{grid-template-columns:1fr 1fr}}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;box-shadow:var(--sh)}
+.stat b{display:block;font-size:26px;font-weight:800;line-height:1.1}.stat span{font-size:13px;color:var(--mut)}
+.chips{display:flex;gap:8px;overflow-x:auto;margin:14px 0 4px}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:99px;padding:7px 14px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+.chip[aria-pressed=true]{background:var(--btn);color:var(--btnT);border-color:var(--btn)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:var(--sh)}
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.badge{font-size:12px;padding:3px 9px;border-radius:99px;font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;background:var(--priS);color:var(--pri)}
+.badge:before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.b-ok{background:var(--okS);color:var(--ok)}.b-warn{background:var(--warnS);color:var(--warn)}.b-bad{background:var(--badS);color:var(--bad)}
+input{width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;margin-bottom:10px}
+label{display:block;font-size:13px;font-weight:600;margin:0 0 4px}
+.toast{position:fixed;left:16px;right:16px;bottom:calc(20px + env(safe-area-inset-bottom,0px));max-width:488px;margin:0 auto;background:var(--ink);color:var(--bg);padding:12px 14px;border-radius:14px;font-size:13px;display:none;z-index:30}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-end;justify-content:center;z-index:20}
+.sheet{background:var(--bg);width:100%;max-width:520px;max-height:92vh;overflow:auto;border-radius:24px 24px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px))}
+.empty{text-align:center;color:var(--mut);padding:26px 10px}
+</style>
+</head>
+<body>
+<div class="app" id="app"><p class="mut">Cargando…</p></div>
+<div class="ov" id="ov"><div class="sheet" id="sheet"></div></div>
+<div class="toast" id="toast" role="status"></div>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+var sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
+var S = {rows:[], f:'todos'};
+function $(id){return document.getElementById(id)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function toast(t){var e=$('toast');e.textContent=t;e.style.display='block';clearTimeout(window._t);window._t=setTimeout(function(){e.style.display='none'},4000)}
+function pad(n){return (n<10?'0':'')+n}
+function iso(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+function hoy(){var d=new Date();d.setHours(0,0,0,0);return d}
+function parse(f){var p=f.split('-').map(Number);return new Date(p[0],p[1]-1,p[2])}
+function dias(f){return f?Math.round((parse(f)-hoy())/864e5):null}
+function fmt(f){if(!f)return '—';var p=f.split('-');return p[2]+'/'+p[1]+'/'+p[0]}
+function abrir(h){$('sheet').innerHTML=h;$('ov').style.display='flex'}
+function cerrar(){$('ov').style.display='none'}
+$('ov').addEventListener('click',function(e){if(e.target===$('ov'))cerrar()});
+
+function pantalla(t,p){$('app').innerHTML='<div class="card" style="margin-top:12vh;text-align:center"><h1>'+t+'</h1><p class="mut">'+p+'</p><a class="btn" href="/">Ir a la app</a></div>'}
+async function init(){
+  var r=await sb.auth.getSession();
+  if(!r.data.session){pantalla('Inicia sesión','Entra primero a la app con tu usuario administrador y vuelve a esta página.');return}
+  var a=await sb.rpc('es_admin');
+  if(a.error||a.data!==true){pantalla('Acceso restringido','Este usuario no es administrador.');return}
+  cargar();
+}
+async function cargar(){
+  var r=await sb.rpc('admin_resumen');
+  if(r.error){toast('No se pudo cargar: '+r.error.message);return}
+  S.rows=r.data||[];render();
+}
+function info(n){
+  var d=dias(n.fin_prueba);
+  if(n.estado==='suspendido')return ['b-bad','Suspendida'];
+  if(n.estado==='activo')return ['b-ok','Activa'];
+  if(d===null)return ['b-warn','En prueba'];
+  if(d<0)return ['b-bad','Prueba vencida hace '+(-d)+' d'];
+  return [d<=7?'b-warn':'b-ok','Prueba: '+(d===0?'vence hoy':'quedan '+d+' d')];
+}
+function vencida(n){var d=dias(n.fin_prueba);return n.estado==='prueba'&&d!==null&&d<0}
+function render(){
+  var R=S.rows;
+  var enP=R.filter(function(n){return n.estado==='prueba'}).length,act=R.filter(function(n){return n.estado==='activo'}).length;
+  var sus=R.filter(function(n){return n.estado==='suspendido'||vencida(n)}).length;
+  var lista=R.filter(function(n){var d=dias(n.fin_prueba);
+    if(S.f==='prueba')return n.estado==='prueba';if(S.f==='activo')return n.estado==='activo';
+    if(S.f==='susp')return n.estado==='suspendido'||vencida(n);
+    if(S.f==='porv')return n.estado==='prueba'&&d!==null&&d>=0&&d<=7;return true});
+  var ch=[['todos','Todas'],['prueba','En prueba'],['activo','Activas'],['porv','Por vencer'],['susp','Suspendidas']].map(function(c){return '<button class="chip" aria-pressed="'+(S.f===c[0])+'" onclick="S.f=\''+c[0]+'\';render()">'+c[1]+'</button>'}).join('');
+  var h='<div class="hero"><small>DentAviso</small><h1>Panel de administración</h1><div class="actions" style="margin:0"><button class="btn white" onclick="formNueva()">+ Nueva clínica</button><a class="btn glass" href="/">Ir a la app</a><button class="btn glass" onclick="cargar()">Actualizar</button></div></div>'+
+   '<div class="stats"><div class="stat"><b>'+R.length+'</b><span>Clínicas</span></div><div class="stat"><b>'+enP+'</b><span>En prueba</span></div><div class="stat"><b>'+act+'</b><span>Activas</span></div><div class="stat"><b>'+sus+'</b><span>Suspendidas o vencidas</span></div></div>'+
+   '<div class="chips">'+ch+'</div>';
+  if(!lista.length)h+='<div class="empty">No hay clínicas en esta vista.</div>';
+  lista.forEach(function(n){var e=info(n);
+    h+='<div class="card"><div class="head"><div><b>'+esc(n.nombre)+'</b><div class="mut">Creada el '+fmt((n.creado_en||'').slice(0,10))+'</div></div><span class="badge '+e[0]+'">'+e[1]+'</span></div>'+
+     '<p class="mut" style="margin:10px 0 2px">'+n.pacientes+' pacientes · '+n.citas+' citas · fin de prueba: '+fmt(n.fin_prueba)+'</p>'+
+     '<p class="mut" style="margin:0">Usuarios: '+(n.usuarios?esc(n.usuarios):'ninguno todavía')+'</p>'+
+     '<div class="actions">'+(n.estado!=='activo'?'<button class="btn" onclick="setEstado(\''+n.id+'\',\'activo\')">Activar</button>':'')+
+     (n.estado!=='suspendido'?'<button class="btn red" onclick="setEstado(\''+n.id+'\',\'suspendido\')">Suspender</button>':'')+
+     '<button class="btn ghost" onclick="extender(\''+n.id+'\')">+15 días de prueba</button><button class="btn ghost" onclick="formVincular(\''+n.id+'\')">Vincular usuario</button></div></div>'});
+  $('app').innerHTML=h;
+}
+function fila(id){return S.rows.filter(function(n){return n.id===id})[0]}
+async function setEstado(id,e){
+  var n=fila(id);
+  if(!confirm((e==='activo'?'¿Activar ':'¿Suspender ')+n.nombre+'?'))return;
+  var r=await sb.from('negocios').update({estado:e}).eq('id',id);
+  if(r.error){toast('No se pudo actualizar: '+r.error.message);return}
+  await cargar();toast(e==='activo'?'Clínica activada':'Clínica suspendida');
+}
+async function extender(id){
+  var n=fila(id),d=dias(n.fin_prueba),base=(d!==null&&d>0)?parse(n.fin_prueba):hoy();
+  base.setDate(base.getDate()+15);
+  var r=await sb.from('negocios').update({estado:'prueba',fin_prueba:iso(base)}).eq('id',id);
+  if(r.error){toast('No se pudo actualizar: '+r.error.message);return}
+  await cargar();toast('Prueba hasta el '+fmt(iso(base)));
+}
+function formNueva(){
+  abrir('<h1>Nueva clínica</h1><div style="height:14px"></div><label for="n-n">Nombre de la clínica</label><input id="n-n">'+
+   '<label for="n-d">Días de prueba</label><input id="n-d" type="number" min="1" value="30">'+
+   '<div class="actions"><button class="btn" onclick="crear()">Crear</button><button class="btn ghost" onclick="cerrar()">Cancelar</button></div>'+
+   '<p class="mut">Después crea su usuario en Supabase (Authentication → Users) y vincúlalo con «Vincular usuario».</p>');
+}
+async function crear(){
+  var nom=$('n-n').value.trim(),dd=parseInt($('n-d').value,10);
+  if(!nom){toast('Escribe el nombre');return}
+  if(!(dd>0)){toast('Indica los días de prueba');return}
+  var f=hoy();f.setDate(f.getDate()+dd);
+  var r=await sb.from('negocios').insert({nombre:nom,estado:'prueba',fin_prueba:iso(f)});
+  if(r.error){toast('No se pudo crear: '+r.error.message);return}
+  cerrar();await cargar();toast('Clínica creada');
+}
+function formVincular(id){
+  var n=fila(id);
+  abrir('<h1>Vincular usuario</h1><p class="mut">Clínica: '+esc(n.nombre)+'. El usuario debe existir ya en Authentication → Users. Cada usuario pertenece a una sola clínica.</p>'+
+   '<label for="v-e">Correo del usuario</label><input id="v-e" type="email">'+
+   '<div class="actions"><button class="btn" onclick="vincular(\''+id+'\')">Vincular</button><button class="btn ghost" onclick="cerrar()">Cancelar</button></div>');
+}
+async function vincular(id){
+  var em=$('v-e').value.trim();
+  if(!em){toast('Escribe el correo');return}
+  var r=await sb.rpc('admin_vincular_usuario',{p_email:em,p_negocio:id});
+  if(r.error){toast('Error: '+r.error.message);return}
+  cerrar();await cargar();toast(r.data);
+}
+init();
+</script>
+</body>
+</html>

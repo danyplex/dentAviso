@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0B2545">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="DentAviso">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>DentAviso</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
@@ -270,6 +277,7 @@ async function avisar(tid){
   var r=await sb.from('tratamientos').update({aviso_enviado:true}).eq('id',tid);
   if(!r.error){t.aviso_enviado=true;render()}
 }
+if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}
 init();
 </script>
 </body>

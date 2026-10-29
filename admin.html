@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#0B2545">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>DentAviso · Administración</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
@@ -95,7 +98,7 @@ function render(){
     if(S.f==='susp')return n.estado==='suspendido'||vencida(n);
     if(S.f==='porv')return n.estado==='prueba'&&d!==null&&d>=0&&d<=7;return true});
   var ch=[['todos','Todas'],['prueba','En prueba'],['activo','Activas'],['porv','Por vencer'],['susp','Suspendidas']].map(function(c){return '<button class="chip" aria-pressed="'+(S.f===c[0])+'" onclick="S.f=\''+c[0]+'\';render()">'+c[1]+'</button>'}).join('');
-  var h='<div class="hero"><small>DentAviso</small><h1>Panel de administración</h1><div class="actions" style="margin:0"><button class="btn white" onclick="formNueva()">+ Nueva clínica</button><a class="btn glass" href="/">Ir a la app</a><button class="btn glass" onclick="cargar()">Actualizar</button></div></div>'+
+  var h='<div class="hero"><img src="logo-horizontal-blanco.svg" alt="DentAviso" style="height:30px;display:block;margin-bottom:12px"><h1>Panel de administración</h1><div class="actions" style="margin:0"><button class="btn white" onclick="formNueva()">+ Nueva clínica</button><a class="btn glass" href="/">Ir a la app</a><button class="btn glass" onclick="cargar()">Actualizar</button></div></div>'+
    '<div class="stats"><div class="stat"><b>'+R.length+'</b><span>Clínicas</span></div><div class="stat"><b>'+enP+'</b><span>En prueba</span></div><div class="stat"><b>'+act+'</b><span>Activas</span></div><div class="stat"><b>'+sus+'</b><span>Suspendidas o vencidas</span></div></div>'+
    '<div class="chips">'+ch+'</div>';
   if(!lista.length)h+='<div class="empty">No hay clínicas en esta vista.</div>';

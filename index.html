@@ -5,8 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0B2545">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icon-192.png">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="DentAviso">
@@ -127,7 +128,7 @@ function saludo(){var h=new Date().getHours();return h<12?'Buenos días':h<19?'B
 async function init(){var r=await sb.auth.getSession();if(r.data.session)load();else showLogin()}
 function showLogin(msg){
   document.body.classList.add('auth');$('tabs').style.display='none';
-  $('app').innerHTML='<div class="login"><div class="logo">'+ic('tooth')+'</div><h1>DentAviso</h1><p style="opacity:.85;margin:6px 0 0">Recordatorios para tu clínica dental</p>'+
+  $('app').innerHTML='<div class="login"><img src="logo-horizontal-blanco.svg" alt="DentAviso" style="height:64px;max-width:100%"><p style="opacity:.85;margin:10px 0 0">Recordatorios para tu clínica dental</p>'+
   '<div class="card"><label for="em">Correo</label><input id="em" type="email" autocomplete="username">'+
   '<label for="pw">Contraseña</label><input id="pw" type="password" autocomplete="current-password">'+
   '<button class="btn full" id="bl" onclick="login()">Entrar</button>'+(msg?'<p style="color:var(--bad);margin:10px 0 0">'+esc(msg)+'</p>':'')+'</div></div>';
@@ -141,7 +142,7 @@ async function login(){
 async function salir(){await sb.auth.signOut();S={neg:null,pac:[],tra:[],cit:[],dia:'',view:'home',sel:null,q:'',f:'todos'};showLogin()}
 function pantallaClave(msg){
   document.body.classList.add('auth');$('tabs').style.display='none';
-  $('app').innerHTML='<div class="login"><div class="logo">'+ic('tooth')+'</div><h1>Elige tu contraseña</h1><p style="opacity:.85;margin:6px 0 0">Es tu primer ingreso. Crea una contraseña propia para tu clínica.</p>'+
+  $('app').innerHTML='<div class="login"><img src="logo-horizontal-blanco.svg" alt="DentAviso" style="height:48px;max-width:100%;margin-bottom:16px"><h1>Elige tu contraseña</h1><p style="opacity:.85;margin:6px 0 0">Es tu primer ingreso. Crea una contraseña propia para tu clínica.</p>'+
   '<div class="card"><label for="p1">Nueva contraseña (mínimo 8 caracteres)</label><input id="p1" type="password" autocomplete="new-password">'+
   '<label for="p2">Repite la contraseña</label><input id="p2" type="password" autocomplete="new-password">'+
   '<button class="btn full" id="bp" onclick="guardarClave()">Guardar y entrar</button>'+
@@ -197,7 +198,7 @@ function vHome(){
   var avis=S.tra.filter(function(t){return t.aviso_enviado}).length;
   var pend=cf.filter(function(t){return dias(t.proximo_control)<=7&&!t.aviso_enviado}).sort(function(a,b){return dias(a.proximo_control)-dias(b.proximo_control)});
   var fecha=new Date().toLocaleDateString('es-EC',{weekday:'long',day:'numeric',month:'long'});
-  var h='<div class="hero"><svg class="bg" viewBox="0 0 24 24">'+IC.tooth+'</svg>'+
+  var h='<div class="hero"><svg class="bg" viewBox="0 0 24 24">'+IC.tooth+'</svg><img src="logo-horizontal-blanco.svg" alt="DentAviso" style="height:30px;display:block;margin-bottom:14px">'+
    '<span class="pill">'+(S.neg.estado==='prueba'?'Prueba hasta el '+fmt(S.neg.fin_prueba):'Plan activo')+'</span>'+
    '<small>'+saludo()+' · '+esc(fecha)+'</small><h1>'+esc(S.neg.nombre)+'</h1>'+
    '<div class="big">'+pend.length+'</div><div class="lbl">'+(pend.length===1?'paciente por avisar':'pacientes por avisar')+'</div>'+

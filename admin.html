@@ -53,7 +53,7 @@ label{display:block;font-size:13px;font-weight:600;margin:0 0 4px}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 var sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
-var S = {rows:[], f:'todos'};
+var S = {rows:[], f:'todos', sol:null, sf:'abiertas', solSel:null};
 function $(id){return document.getElementById(id)}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function toast(t){var e=$('toast');e.textContent=t;e.style.display='block';clearTimeout(window._t);window._t=setTimeout(function(){e.style.display='none'},4000)}
@@ -78,7 +78,9 @@ async function init(){
 async function cargar(){
   var r=await sb.rpc('admin_resumen');
   if(r.error){toast('No se pudo cargar: '+r.error.message);return}
-  S.rows=r.data||[];render();
+  S.rows=r.data||[];
+  var q=await sb.from('solicitudes').select('*').order('creado_en',{ascending:false}).limit(200);
+  S.sol=q.error?null:(q.data||[]);render();
 }
 function info(n){
   var d=dias(n.fin_prueba);
@@ -100,7 +102,7 @@ function render(){
   var ch=[['todos','Todas'],['prueba','En prueba'],['activo','Activas'],['porv','Por vencer'],['susp','Suspendidas']].map(function(c){return '<button class="chip" aria-pressed="'+(S.f===c[0])+'" onclick="S.f=\''+c[0]+'\';render()">'+c[1]+'</button>'}).join('');
   var h='<div class="hero"><img src="logo-horizontal-blanco.svg" alt="DentAviso" style="height:30px;display:block;margin-bottom:12px"><h1>Panel de administración</h1><div class="actions" style="margin:0"><button class="btn white" onclick="formNueva()">+ Nueva clínica</button><a class="btn glass" href="/">Ir a la app</a><button class="btn glass" onclick="cargar()">Actualizar</button></div></div>'+
    '<div class="stats"><div class="stat"><b>'+R.length+'</b><span>Clínicas</span></div><div class="stat"><b>'+enP+'</b><span>En prueba</span></div><div class="stat"><b>'+act+'</b><span>Activas</span></div><div class="stat"><b>'+sus+'</b><span>Suspendidas o vencidas</span></div></div>'+
-   '<div class="chips">'+ch+'</div>';
+   solHTML()+'<h2>Clínicas</h2><div class="chips">'+ch+'</div>';
   if(!lista.length)h+='<div class="empty">No hay clínicas en esta vista.</div>';
   lista.forEach(function(n){var e=info(n);
     h+='<div class="card"><div class="head"><div><b>'+esc(n.nombre)+'</b><div class="mut">Creada el '+fmt((n.creado_en||'').slice(0,10))+'</div></div><span class="badge '+e[0]+'">'+e[1]+'</span></div>'+
@@ -110,6 +112,34 @@ function render(){
      (n.estado!=='suspendido'?'<button class="btn red" onclick="setEstado(\''+n.id+'\',\'suspendido\')">Suspender</button>':'')+
      '<button class="btn ghost" onclick="extender(\''+n.id+'\')">+15 días de prueba</button><button class="btn ghost" onclick="formVincular(\''+n.id+'\')">Vincular usuario</button></div></div>'});
   $('app').innerHTML=h;
+}
+function solHTML(){
+  if(S.sol===null)return '';
+  var nuevas=S.sol.filter(function(x){return x.estado==='nueva'}).length;
+  var lista=S.sf==='todas'?S.sol:S.sol.filter(function(x){return x.estado==='nueva'||x.estado==='contactada'});
+  var h='<div class="top" style="margin-top:22px"><h2 style="margin:0">Solicitudes de prueba '+(nuevas?'<span class="badge b-bad">'+nuevas+(nuevas>1?' nuevas':' nueva')+'</span>':'')+'</h2></div>'+
+   '<div class="chips"><button class="chip" aria-pressed="'+(S.sf!=='todas')+'" onclick="S.sf=\'abiertas\';render()">Abiertas</button><button class="chip" aria-pressed="'+(S.sf==='todas')+'" onclick="S.sf=\'todas\';render()">Todas</button></div>';
+  if(!lista.length)h+='<div class="empty">No hay solicitudes en esta vista.</div>';
+  lista.forEach(function(x){
+    var b=({nueva:['b-bad','Nueva'],contactada:['b-warn','Contactada'],creada:['b-ok','Clínica creada'],descartada:['','Descartada']})[x.estado]||['',x.estado];
+    h+='<div class="card"><div class="head"><div><b>'+esc(x.nombre)+'</b><div class="mut">'+esc(x.clinica)+' · '+esc(x.ciudad||'')+'</div></div><span class="badge '+b[0]+'">'+b[1]+'</span></div>'+
+     '<p class="mut" style="margin:8px 0 0">WhatsApp: '+esc(x.whatsapp)+' · '+fmt((x.creado_en||'').slice(0,10))+(x.origen?' · origen: '+esc(x.origen):'')+'</p>'+
+     '<div class="actions"><button class="btn" onclick="solWA(\''+x.id+'\')">Escribir por WhatsApp</button>'+
+     (x.estado!=='creada'?'<button class="btn ghost" onclick="solCrear(\''+x.id+'\')">Crear clínica</button>':'')+
+     (x.estado!=='descartada'&&x.estado!=='creada'?'<button class="btn red" onclick="solEstado(\''+x.id+'\',\'descartada\')">Descartar</button>':'')+'</div></div>'});
+  return h;
+}
+function solDe(id){return S.sol.filter(function(x){return x.id===id})[0]}
+async function solWA(id){
+  var x=solDe(id),msg='Hola '+x.nombre.split(' ')[0]+', le saludo de DentAviso. Recibí su solicitud de prueba gratis de 30 días para '+x.clinica+'. ¿Le parece bien que le configure su clínica y le muestre cómo funciona?';
+  window.open('https://wa.me/'+x.whatsapp.replace(/\D/g,'')+'?text='+encodeURIComponent(msg),'_blank');
+  if(x.estado==='nueva')await solEstado(id,'contactada',true);
+}
+function solCrear(id){formNueva(solDe(id).clinica,id)}
+async function solEstado(id,e,quiet){
+  var r=await sb.from('solicitudes').update({estado:e}).eq('id',id);
+  if(r.error){toast('No se pudo actualizar: '+r.error.message);return}
+  await cargar();if(!quiet)toast('Solicitud actualizada');
 }
 function fila(id){return S.rows.filter(function(n){return n.id===id})[0]}
 async function setEstado(id,e){
@@ -126,8 +156,9 @@ async function extender(id){
   if(r.error){toast('No se pudo actualizar: '+r.error.message);return}
   await cargar();toast('Prueba hasta el '+fmt(iso(base)));
 }
-function formNueva(){
-  abrir('<h1>Nueva clínica</h1><div style="height:14px"></div><label for="n-n">Nombre de la clínica</label><input id="n-n">'+
+function formNueva(nombre,sid){
+  S.solSel=sid||null;
+  abrir('<h1>Nueva clínica</h1><div style="height:14px"></div><label for="n-n">Nombre de la clínica</label><input id="n-n" value="'+esc(nombre||'')+'">'+
    '<label for="n-d">Días de prueba</label><input id="n-d" type="number" min="1" value="30">'+
    '<div class="actions"><button class="btn" onclick="crear()">Crear</button><button class="btn ghost" onclick="cerrar()">Cancelar</button></div>'+
    '<p class="mut">Después crea su usuario en Supabase (Authentication → Users) y vincúlalo con «Vincular usuario».</p>');
@@ -139,6 +170,7 @@ async function crear(){
   var f=hoy();f.setDate(f.getDate()+dd);
   var r=await sb.from('negocios').insert({nombre:nom,estado:'prueba',fin_prueba:iso(f)});
   if(r.error){toast('No se pudo crear: '+r.error.message);return}
+  if(S.solSel){await sb.from('solicitudes').update({estado:'creada'}).eq('id',S.solSel);S.solSel=null}
   cerrar();await cargar();toast('Clínica creada');
 }
 function formVincular(id){

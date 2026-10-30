@@ -131,7 +131,7 @@ function showLogin(msg){
   $('app').innerHTML='<div class="login"><img src="logo-horizontal-blanco.svg" alt="DentAviso" style="height:64px;max-width:100%"><p style="opacity:.85;margin:10px 0 0">Recordatorios para tu clínica dental</p>'+
   '<div class="card"><label for="em">Correo</label><input id="em" type="email" autocomplete="username">'+
   '<label for="pw">Contraseña</label><input id="pw" type="password" autocomplete="current-password">'+
-  '<button class="btn full" id="bl" onclick="login()">Entrar</button>'+(msg?'<p style="color:var(--bad);margin:10px 0 0">'+esc(msg)+'</p>':'')+'</div></div>';
+  '<button class="btn full" id="bl" onclick="login()">Entrar</button>'+(msg?'<p style="color:var(--bad);margin:10px 0 0">'+esc(msg)+'</p>':'')+'</div><p style="text-align:center;margin:16px 0 0"><a href="prueba.html" style="color:#fff;font-weight:600">¿Aún no tienes cuenta? Pide tu prueba gratis de 30 días</a></p></div>';
 }
 async function login(){
   $('bl').disabled=true;
